@@ -16,25 +16,36 @@ class EscanerSQLApp:
             "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "INSERT", 
             "DELETE", "UPDATE", "AS", "INNER", "JOIN", "ON"
         }
+        
+        self.ts = {
+                300: [10, 11, 12, 13, 14, 15],
+                301: [4, 72],
+                302: [4],
+                303: [11, 50, 199],
+                304: [4],
+                305: [8, 11, 13, 14, 15, 50, 51, 53, 199],
+                306: [4],
+                307: [12, 50, 53, 199],
+                308: [4],
+                309: [4, 12, 50, 53, 199],
+                310: [12, 53, 199],
+                311: [4],
+                312: [14, 15, 53, 199],
+                313: [4],
+                314: [8, 13],
+                315: [8],
+                316: [4, 54, 61],
+                317: [14, 15],
+                318: [62],
+                319: [61]
+        }        
 
-        self.tabla_sintactica = {
-            "4": [301, 302, 304, 306, 308, 309, 311, 313, 316],
-            "8": [314, 315],
-            "10": [300],
-            "11": [303, 305],
-            "12": [307, 309, 310],
-            "13": [305, 314],
-            "14": [305, 312, 317],
-            "15": [305, 312, 317],
-            "50": [303, 305, 307, 309],
-            "51": [305],
-            "53": [305, 307, 309, 310, 312],
-            "54": [316],
-            "61": [316, 319],
-            "62": [318],
-            "72": [301],
-            "199": [303, 305, 307, 309, 310, 312]
-        }
+    def modulo_analisis(token_ingresado):
+        reglas_asociadas = []
+        for regla, tokens_validos in self.ts.items():
+            if token_ingresado in tokens_validos:
+                reglas_asociadas.append(str(regla))
+        return reglas_asociadas
 
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True, padx=5, pady=5)
@@ -42,7 +53,7 @@ class EscanerSQLApp:
         self.tab_escaner = ttk.Frame(self.notebook)
         self.tab_sintactico = ttk.Frame(self.notebook)
 
-        self.notebook.add(self.tab_escaner, text="Escáner Léxico")
+        #self.notebook.add(self.tab_escaner, text="Escáner Léxico")
         self.notebook.add(self.tab_sintactico, text="Tabla Sintáctica")
 
         self.crear_modulo_escaner()
@@ -162,7 +173,7 @@ class EscanerSQLApp:
         frame_entrada = tk.LabelFrame(self.tab_sintactico, text="Módulo de Entrada", padx=10, pady=10)
         frame_entrada.pack(fill="x", padx=10, pady=5)
 
-        tk.Label(frame_entrada, text="Ingrese un Token (Ej. 4, 12, 50, 18):", font=("Helvetica", 11)).pack(side="left", padx=5)
+        tk.Label(frame_entrada, text="Ingrese un Token:", font=("Helvetica", 11)).pack(side="left", padx=5)
         
         self.entry_token = tk.Entry(frame_entrada, font=("Helvetica", 12), width=10)
         self.entry_token.pack(side="left", padx=5)
@@ -195,20 +206,28 @@ class EscanerSQLApp:
 
     def modulo_analisis_sintactico(self):
         token_ingresado = self.entry_token.get().strip()
-
-        if not token_ingresado:
-            messagebox.showwarning("Advertencia", "Por favor ingrese un token.")
-            return
         
+        #lógica 2
+
         if not token_ingresado.isdigit():
-            messagebox.showerror("Error", "El token debe ser un valor numérico.")
+            messagebox.showerror("Error de Entrada", "Por favor, ingresa únicamente un valor numérico.")
             return
 
-        if token_ingresado in self.tabla_sintactica:
-            reglas = self.tabla_sintactica[token_ingresado]
-            reglas_str = ", ".join(map(str, reglas))
+        token = int(token_ingresado)
+
+        if not (1 <= token <= 99):
+            messagebox.showwarning("Advertencia", "El token debe estar en el rango de 1 a 99.")
+            return
+
+
+        reglas = self.modulo_analisis_sintactico(token)
+
+
+        if reglas:
+            self.resultado_var.set(", ".join(reglas))
         else:
-            reglas_str = "No tiene reglas asociadas."
+            self.resultado_var.set("Ninguna regla asociada (Celda vacía).")
+
 
         self.tree_sintactico.insert("", "end", values=(token_ingresado, reglas_str))
         
