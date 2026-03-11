@@ -4,7 +4,7 @@ Descripción: Este programa permite al usuario agregar, mostrar y eliminar tarea
 Autor: Pablo Hernández.
 Fecha: 2024-06-01
 """
-"""Aqui se define la clase GestorTareas con sus métodos para agregar, mostrar y eliminar tareas"""
+"""Aqui se define la clase GestorTareas con sus métodos"""
 class GestorTareas:
     def __init__(self):
         self.tareas = []
@@ -28,7 +28,7 @@ class GestorTareas:
         else:
             print("Índice inválido")
             
-""" Aquí se define la lógica para agregar, mostrar y eliminar tareas."""
+""" Aquí se define la lógica general"""
 
 def main():
     gestor = GestorTareas()
