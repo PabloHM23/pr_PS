@@ -72,6 +72,9 @@ public class pr03 extends JFrame {
 
         if (esReservada("SELECT")) {
             parsearSelect();
+            if (pos < tokensActuales.size()) {
+                registrarError(202, "Token inesperado después de la consulta");
+            }
         } else {
             registrarError(201, "Se esperaba SELECT al inicio");
         }
@@ -189,6 +192,8 @@ public class pr03 extends JFrame {
         if (esReservada("AND") || esReservada("OR")) {
             consumir();
             parsearCondicion();
+        } else if (esInicioCondicion()) {
+            registrarError(208, "Se esperaba AND u OR entre condiciones");
         }
     }
 
@@ -212,6 +217,10 @@ public class pr03 extends JFrame {
     /** Igual a parsearRefValor pero dentro de lista IN */
     private void parsearValorLiteral() {
         parsearRefValor();
+    }
+
+    private boolean esInicioCondicion() {
+        return esTipo(4) || esTipo(6) || esTipo(9);
     }
 
     // =========================================================
