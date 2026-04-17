@@ -78,7 +78,7 @@ public class pr04 extends JFrame {
         // Módulo de Resultados (UI)
         JPanel panelCentro = new JPanel(new BorderLayout());
         panelCentro.setBorder(BorderFactory.createTitledBorder("Módulo de Resultados"));
-        String[] columnas = {"Token", "Código", "Reglas asociadas"};
+        String[] columnas = { "Token", "Código", "Reglas asociadas" };
         modeloTabla = new DefaultTableModel(columnas, 0);
         tablaResultados = new JTable(modeloTabla);
         panelCentro.add(new JScrollPane(tablaResultados), BorderLayout.CENTER);
@@ -96,50 +96,41 @@ public class pr04 extends JFrame {
     }
 
     private void realizarAnalisis() {
-        // Limpiar tabla de resultados anteriores
         modeloTabla.setRowCount(0);
 
-        // 1. Obtener texto
         String entrada = txtEntrada.getText().trim();
-        if (entrada.isEmpty()) return;
+        if (entrada.isEmpty())
+            return;
 
-        // 2. Preprocesar para separar símbolos de puntuación
         entrada = entrada.replaceAll("\\(", " ( ");
         entrada = entrada.replaceAll("\\)", " ) ");
         entrada = entrada.replaceAll(";", " ; ");
-        
-        // 3. Tokenizar (separar por espacios o saltos de línea)
+
         String[] tokensBrutos = entrada.split("\\s+");
 
-        // 4. Analizar cada token
         for (String tokenStr : tokensBrutos) {
-            if (tokenStr.isEmpty()) continue;
+            if (tokenStr.isEmpty())
+                continue;
 
-            // Determinar Código
             int codigo = obtenerCodigoToken(tokenStr);
 
-            // Determinar Reglas Asociadas según la tabla sintáctica
             String reglas = tablaSintactica.getOrDefault(codigo, "No tiene reglas asociadas");
 
-            // Enviar a Módulo de Resultados (Agregar a la tabla)
-            modeloTabla.addRow(new Object[]{tokenStr, codigo, reglas});
+            modeloTabla.addRow(new Object[] { tokenStr, codigo, reglas });
         }
     }
 
     private int obtenerCodigoToken(String tokenStr) {
         String tokenUpper = tokenStr.toUpperCase();
-        
-        // Si es una palabra reservada o símbolo registrado
+
         if (catalogoTokens.containsKey(tokenUpper)) {
             return catalogoTokens.get(tokenUpper);
         }
-        
-        // Si es un número (ej. "2")
+
         if (tokenStr.matches("\\d+")) {
             return 61;
         }
-        
-        // Si no es ninguno de los anteriores, se asume que es un Identificador
+
         return 4;
     }
 
