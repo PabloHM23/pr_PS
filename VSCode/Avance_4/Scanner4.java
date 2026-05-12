@@ -9,35 +9,30 @@ import java.util.List;
 public class Scanner4 extends JFrame {
 
     // --- DICCIONARIOS LEXICOS ---
-    // APLICADO: Clasificación de tokens según especificación (Tabla 6.2)
-    static final Map<String, Integer> PALABRAS_RESERVADAS = new HashMap<>();  // Tipo 1, códigos 10-31
-    static final Map<Character, Integer> DELIMITADORES = new HashMap<>();       // Tipo 5, códigos 50-54
-    static final Map<Character, Integer> OPERADORES = new HashMap<>();          // Tipo 7, códigos 70-73
-    static final Map<String, Integer> RELACIONALES = new HashMap<>();           // Tipo 8, códigos 81-85
+    static final Map<String, Integer> PALABRAS_RESERVADAS = new HashMap<>();
+    static final Map<Character, Integer> DELIMITADORES = new HashMap<>();
+    static final Map<Character, Integer> OPERADORES = new HashMap<>();
+    static final Map<String, Integer> RELACIONALES = new HashMap<>();
 
     static {
-        // Palabras reservadas (10-31) - Tabla 6.2
         String[] pr = { "SELECT", "FROM", "WHERE", "IN", "AND", "OR", "CREATE", "TABLE",
                 "CHAR", "NUMERIC", "NOT", "NULL", "CONSTRAINT", "KEY", "PRIMARY",
-                "FOREIGN", "REFERENCES", "INSERT", "INTO", "VALUES", "DATE", "CHECK" };
+                "FOREIGN", "REFERENCES", "INSERT", "INTO", "VALUES" };
         int prCode = 10;
         for (String p : pr)
             PALABRAS_RESERVADAS.put(p, prCode++);
 
-        // Delimitadores (50-54) - Tabla 6.2
         DELIMITADORES.put(',', 50);
         DELIMITADORES.put('.', 51);
         DELIMITADORES.put('(', 52);
         DELIMITADORES.put(')', 53);
         DELIMITADORES.put('\'', 54);
 
-        //Operadores aritméticos (70-73) - Tabla 6.2
         OPERADORES.put('+', 70);
         OPERADORES.put('-', 71);
         OPERADORES.put('*', 72);
         OPERADORES.put('/', 73);
 
-        //Operadores relacionales (81-85) - Tabla 6.2
         RELACIONALES.put(">=", 84);
         RELACIONALES.put("<=", 85);
         RELACIONALES.put(">", 81);
@@ -46,13 +41,12 @@ public class Scanner4 extends JFrame {
     }
 
     // --- CLASES DE DATOS ---
-    // Estructura Token con tipos (1-9), códigos y subcódigos (61,62)
     static class Token {
         String lexema;
-        int tipo;           // Tipo de token (1:Palabra Reservada, 4:Identificador, 5:Delimitador, 6:Constante, 7:Operador, 8:Relacional, 9:Desconocido)
-        int codigo;         // Código numérico del token
-        int linea;          // Número de línea
-        int sub;            // Subcódigo para constantes (61:numérico, 62:alfanumérico)
+        int tipo;
+        int codigo;
+        int linea;
+        int sub;
         boolean es_ident = false, es_const = false, desconocido = false;
 
         Token(String lexema, int tipo, int codigo, int linea) {
@@ -63,12 +57,9 @@ public class Scanner4 extends JFrame {
         }
     }
 
-    // Estructura de errores semánticos (Tipo 2 léxico, Tipo 3 sintáctico)
     static class ErrorSQL {
-        int tipo;           // Tipo de error (1:léxico, 2:sintáctico)
-        int codigo;         // Código de error según especificación
-        int linea;          // Línea donde ocurre el error
-        String descripcion; // Descripción del error
+        int tipo, codigo, linea;
+        String descripcion;
 
         ErrorSQL(int tipo, int codigo, int linea, String descripcion) {
             this.tipo = tipo;
@@ -83,12 +74,29 @@ public class Scanner4 extends JFrame {
         List<ErrorSQL> errores = new ArrayList<>();
     }
 
+    static class TablaSemantica {
+        String nombre;
+        String columna;
+        String tipo;
+        boolean pk;
+        boolean fk;
+        String detalles;
+
+        TablaSemantica(String nombre, String columna, String tipo, boolean pk, boolean fk, String detalles) {
+            this.nombre = nombre;
+            this.columna = columna;
+            this.tipo = tipo;
+            this.pk = pk;
+            this.fk = fk;
+            this.detalles = detalles;
+        }
+    }
+
     // --- MOTOR DE ANALISIS ---
     static class Analizador {
         static List<Token> tokens;
         static List<ErrorSQL> erroresLexicos;
 
-        // Análisis léxico - Scanner del DDL de SQL
         static void tokenizar(String sql) {
             tokens = new ArrayList<>();
             erroresLexicos = new ArrayList<>();
@@ -105,11 +113,9 @@ public class Scanner4 extends JFrame {
                         continue;
                     }
 
-                    // Reconocimiento de comentarios
                     if (i + 1 < linea.length() && linea.substring(i, i + 2).equals("--"))
                         break;
 
-                    // Reconocimiento de operadores relacionales (Tipo 8)
                     String dos = (i + 1 < linea.length()) ? linea.substring(i, i + 2) : "";
                     if (RELACIONALES.containsKey(dos)) {
                         tokens.add(new Token(dos, 8, RELACIONALES.get(dos), li));
@@ -123,14 +129,12 @@ public class Scanner4 extends JFrame {
                         continue;
                     }
 
-                    // Reconocimiento de operadores aritméticos (Tipo 7)
                     if (OPERADORES.containsKey(c)) {
                         tokens.add(new Token(String.valueOf(c), 7, OPERADORES.get(c), li));
                         i++;
                         continue;
                     }
 
-                    // Reconocimiento de constantes alfanuméricas (Tipo 6, sub=62)
                     if (c == '\'') {
                         boolean es_suelta = false;
                         if (!tokens.isEmpty()) {
@@ -149,19 +153,18 @@ public class Scanner4 extends JFrame {
                                 j++;
 
                             if (j >= linea.length()) {
-                                // APLICADO: Error léxico por comilla no cerrada
                                 erroresLexicos
                                         .add(new ErrorSQL(2, 205, li, "Se esperaba Delimitador (comilla de cierre ')"));
                                 String valor = linea.substring(i + 1, j);
                                 Token t = new Token(valor, 6, 0, li);
-                                t.sub = 62;  // Constante alfanumérica
+                                t.sub = 62;
                                 t.es_const = true;
                                 tokens.add(t);
                                 i = j;
                             } else {
                                 String valor = linea.substring(i + 1, j);
                                 Token t = new Token(valor, 6, 0, li);
-                                t.sub = 62;  // Constante alfanumérica
+                                t.sub = 62;
                                 t.es_const = true;
                                 tokens.add(t);
                                 i = j + 1;
@@ -170,27 +173,24 @@ public class Scanner4 extends JFrame {
                         continue;
                     }
 
-                    // Reconocimiento de delimitadores (Tipo 5)
                     if (DELIMITADORES.containsKey(c)) {
                         tokens.add(new Token(String.valueOf(c), 5, DELIMITADORES.get(c), li));
                         i++;
                         continue;
                     }
 
-                    // Reconocimiento de constantes numéricas (Tipo 6, sub=61)
                     if (Character.isDigit(c)) {
                         int j = i;
                         while (j < linea.length() && (Character.isDigit(linea.charAt(j)) || linea.charAt(j) == '.'))
                             j++;
                         Token t = new Token(linea.substring(i, j), 6, 0, li);
-                        t.sub = 61;  // Constante numérica
+                        t.sub = 61;
                         t.es_const = true;
                         tokens.add(t);
                         i = j;
                         continue;
                     }
 
-                    // Reconocimiento de palabras reservadas (Tipo 1) e identificadores (Tipo 4)
                     if (Character.isLetter(c) || c == '_') {
                         int j = i;
                         while (j < linea.length() && (Character.isLetterOrDigit(linea.charAt(j))
@@ -198,9 +198,9 @@ public class Scanner4 extends JFrame {
                             j++;
                         String palabra = linea.substring(i, j).toUpperCase();
                         if (PALABRAS_RESERVADAS.containsKey(palabra)) {
-                            tokens.add(new Token(palabra, 1, PALABRAS_RESERVADAS.get(palabra), li));  // Tipo 1: Palabra Reservada
+                            tokens.add(new Token(palabra, 1, PALABRAS_RESERVADAS.get(palabra), li));
                         } else {
-                            Token t = new Token(palabra, 4, 0, li);  // Tipo 4: Identificador
+                            Token t = new Token(palabra, 4, 0, li);
                             t.es_ident = true;
                             tokens.add(t);
                         }
@@ -208,9 +208,8 @@ public class Scanner4 extends JFrame {
                         continue;
                     }
 
-                    // Manejo de símbolos desconocidos (Tipo 9, error léxico)
                     erroresLexicos.add(new ErrorSQL(1, 101, li, "Símbolo desconocido: '" + c + "'"));
-                    Token desc = new Token(String.valueOf(c), 9, 101, li);  // Tipo 9: Desconocido
+                    Token desc = new Token(String.valueOf(c), 9, 101, li);
                     desc.desconocido = true;
                     tokens.add(desc);
                     i++;
@@ -218,17 +217,14 @@ public class Scanner4 extends JFrame {
             }
         }
 
-        // Análisis semántico - Generación de tablas de símbolos (Identificadores, Constantes)
         static ResultadoAnalisis analizarTodo(String sql) {
             tokenizar(sql);
             ResultadoAnalisis res = new ResultadoAnalisis();
 
-            // Tabla de símbolos - Identificadores (códigos 401+)
             Map<String, Integer> mapaIdent = new HashMap<>();
-            // APLICADO: Tabla de símbolos - Constantes (códigos 600+)
             List<Token> listaConst = new ArrayList<>();
-            int contIdent = 401;  // Inicio de códigos para identificadores
-            int contConst = 600;  // Inicio de códigos para constantes
+            int contIdent = 401;
+            int contConst = 600;
 
             for (Token t : tokens) {
                 if (t.es_ident && !mapaIdent.containsKey(t.lexema)) {
@@ -275,14 +271,12 @@ public class Scanner4 extends JFrame {
     }
 
     // --- PARSER SINTACTICO ---
-    // Parser LL(1) para validación sintáctica del DDL SQL
     static class ParserSintactico {
-        List<Token> toks = new ArrayList<>();        // Tokens filtrados (sin desconocidos)
-        List<ErrorSQL> errores = new ArrayList<>();  // Errores sintácticos detectados
-        int pos = 0;                                 // Posición actual en el stream
+        List<Token> toks = new ArrayList<>();
+        List<ErrorSQL> errores = new ArrayList<>();
+        int pos = 0;
 
         ParserSintactico(List<Token> tokens) {
-            // Filtra tokens desconocidos (Tipo 9)
             for (Token t : tokens)
                 if (t.tipo != 9)
                     toks.add(t);
@@ -334,12 +328,10 @@ public class Scanner4 extends JFrame {
             return t != null && t.tipo == tipo;
         }
 
-        // Regla inicial del parser - Sentencias DDL permitidas
         List<ErrorSQL> parsear() {
             if (toks.isEmpty())
                 return errores;
             Token t = ver();
-            // Reconocimiento de sentencias: SELECT, CREATE, INSERT
             if (t.tipo == 1 && t.lexema.equals("SELECT"))
                 parsearSelect();
             else if (t.tipo == 1 && t.lexema.equals("CREATE"))
@@ -357,9 +349,8 @@ public class Scanner4 extends JFrame {
             return errores;
         }
 
-        // Regla para sentencias SELECT
         void parsearSelect() {
-            consumir();  // Consume 'SELECT'
+            consumir();
             if (esTipo(7) && ver().lexema.equals("*"))
                 consumir();
             else {
@@ -408,7 +399,7 @@ public class Scanner4 extends JFrame {
             }
         }
 
-        // Regla LL(1) para condiciones WHERE con operadores AND/OR
+        // Inicio de la regla LL
         void parsearCondicion() {
             esperarTipo(4, 204, "Se esperaba Identificador en condición");
             if (ver() != null && ver().tipo == 5 && ver().lexema.equals(".")) {
@@ -467,9 +458,8 @@ public class Scanner4 extends JFrame {
             }
         }
 
-        // Regla para sentencias CREATE TABLE
         void parsearCreateTable() {
-            consumir();  // Consume 'CREATE'
+            consumir();
             esperarReservada("TABLE");
             esperarTipo(4, 204, "Se esperaba nombre de tabla");
             esperarDelimitador("(");
@@ -485,31 +475,22 @@ public class Scanner4 extends JFrame {
             }
         }
 
-        // Regla para definición de columnas o constraints
         void parsearDefColODist() {
             if (ver() != null && ver().tipo == 1 && ver().lexema.equals("CONSTRAINT")) {
                 parsearConstraint();
             } else {
                 esperarTipo(4, 204, "Se esperaba nombre de columna");
                 Token t = ver();
-                // Soporte para tipos de datos CHAR, NUMERIC, DATE (Tabla 6.2)
-                if (t != null && t.tipo == 1 && (t.lexema.equals("CHAR") || t.lexema.equals("NUMERIC") || t.lexema.equals("DATE"))) {
+                if (t != null && t.tipo == 1 && (t.lexema.equals("CHAR") || t.lexema.equals("NUMERIC"))) {
                     consumir();
-                    // Soporte para parámetros de tipos de datos (e.g., CHAR(20), NUMERIC(10,2))
                     if (ver() != null && ver().lexema.equals("(")) {
                         consumir();
                         esperarTipo(6, 206, "Se esperaba tamaño numérico");
-                        // Soporte para precisión y escala en NUMERIC(p,s)
-                        if (ver() != null && ver().tipo == 5 && ver().lexema.equals(",")) {
-                            consumir();
-                            esperarTipo(6, 206, "Se esperaba escala numérica");
-                        }
                         esperarDelimitador(")");
                     }
                 } else {
-                    errores.add(new ErrorSQL(2, 201, lineaActual(), "Se esperaba tipo de dato (CHAR, NUMERIC o DATE)"));
+                    errores.add(new ErrorSQL(2, 201, lineaActual(), "Se esperaba tipo de dato (CHAR o NUMERIC)"));
                 }
-                // Validación de restricción NOT NULL
                 if (esReservada("NOT")) {
                     consumir();
                     esperarReservada("NULL");
@@ -542,25 +523,13 @@ public class Scanner4 extends JFrame {
                 esperarDelimitador("(");
                 esperarTipo(4, 204, "Se esperaba columna referenciada");
                 esperarDelimitador(")");
-            } // Soporte para restricción CHECK (validación de columnas)
-            else if (t != null && t.tipo == 1 && t.lexema.equals("CHECK")) {
-                consumir();
-                esperarDelimitador("(");
-                esperarTipo(4, 204, "Se esperaba columna en CHECK");
-                // Validación de valores en CHECK
-                if (ver() != null && ver().tipo == 8) {
-                    consumir();
-                    esperarTipo(6, 206, "Se esperaba valor en CHECK");
-                }
-                esperarDelimitador(")");
             } else {
-                errores.add(new ErrorSQL(2, 201, lineaActual(), "Se esperaba PRIMARY, FOREIGN o CHECK después de CONSTRAINT"));
+                errores.add(new ErrorSQL(2, 201, lineaActual(), "Se esperaba PRIMARY o FOREIGN después de CONSTRAINT"));
             }
         }
 
-        // Regla para sentencias INSERT
         void parsearInsert() {
-            consumir();  // Consume 'INSERT'
+            consumir();
             esperarReservada("INTO");
             esperarTipo(4, 204, "Se esperaba nombre de tabla");
             esperarDelimitador("(");
@@ -703,4 +672,3 @@ public class Scanner4 extends JFrame {
         });
     }
 }
-
