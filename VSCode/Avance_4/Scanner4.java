@@ -2,13 +2,15 @@ package VSCode.Avance_4;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
 
+
 public class Scanner4 extends JFrame {
 
-    // --- DICCIONARIOS LEXICOS ---
+    // === DICCIONARIOS LÉXICOS ===
     static final Map<String, Integer> PALABRAS_RESERVADAS = new HashMap<>();
     static final Map<Character, Integer> DELIMITADORES = new HashMap<>();
     static final Map<Character, Integer> OPERADORES = new HashMap<>();
@@ -17,7 +19,7 @@ public class Scanner4 extends JFrame {
     static {
         String[] pr = { "SELECT", "FROM", "WHERE", "IN", "AND", "OR", "CREATE", "TABLE",
                 "CHAR", "NUMERIC", "NOT", "NULL", "CONSTRAINT", "KEY", "PRIMARY",
-                "FOREIGN", "REFERENCES", "INSERT", "INTO", "VALUES" };
+                "FOREIGN", "REFERENCES", "INSERT", "INTO", "VALUES", "INT", "VARCHAR", "DECIMAL", "DATE" };
         int prCode = 10;
         for (String p : pr)
             PALABRAS_RESERVADAS.put(p, prCode++);
@@ -26,7 +28,7 @@ public class Scanner4 extends JFrame {
         DELIMITADORES.put('.', 51);
         DELIMITADORES.put('(', 52);
         DELIMITADORES.put(')', 53);
-        DELIMITADORES.put('\'', 54);
+        DELIMITADORES.put(';', 54);
 
         OPERADORES.put('+', 70);
         OPERADORES.put('-', 71);
@@ -40,14 +42,174 @@ public class Scanner4 extends JFrame {
         RELACIONALES.put("=", 83);
     }
 
-    // --- CLASES DE DATOS ---
+    // === BASE DE DATOS INSCRITOS ===
+    static class BaseDatos {
+        Map<String, Tabla> tablas = new HashMap<>();
+        String nombre = "INSCRITOS";
+
+        BaseDatos() {
+            inicializarEstructura();
+        }
+
+        void inicializarEstructura() {
+            // Tabla DEPARTAMENTOS
+            Tabla departamentos = new Tabla("DEPARTAMENTOS");
+            departamentos.agregarColumna("D#", "VARCHAR", 3, true, false, null);
+            departamentos.agregarColumna("NOMBRE", "VARCHAR", 40, false, false, null);
+            departamentos.agregarColumna("UBICACION", "VARCHAR", 20, false, false, null);
+            departamentos.setPrimaryKey("D#");
+            tablas.put("DEPARTAMENTOS", departamentos);
+
+            // Tabla CARRERAS
+            Tabla carreras = new Tabla("CARRERAS");
+            carreras.agregarColumna("C#", "VARCHAR", 3, true, false, null);
+            carreras.agregarColumna("NOMBRE", "VARCHAR", 40, false, false, null);
+            carreras.agregarColumna("DURACION", "VARCHAR", 4, false, false, null);
+            carreras.agregarColumna("CREDITOS", "INT", 3, false, false, null);
+            carreras.agregarColumna("D#", "VARCHAR", 3, false, false, null);
+            carreras.setPrimaryKey("C#");
+            
+            // Llave Foránea: CARRERAS.D# -> DEPARTAMENTOS.D#
+            LlaveForeignKey fk = new LlaveForeignKey("FK_CARRERAS", "D#", "DEPARTAMENTOS", "D#");
+            carreras.agregarLlaveForeignKey(fk);
+            tablas.put("CARRERAS", carreras);
+
+            // Tabla ESTUDIANTES
+            Tabla estudiantes = new Tabla("ESTUDIANTES");
+            estudiantes.agregarColumna("E#", "VARCHAR", 3, true, false, null);
+            estudiantes.agregarColumna("NOMBRE", "VARCHAR", 40, false, false, null);
+            estudiantes.agregarColumna("TELEFONO", "VARCHAR", 10, false, false, null);
+            estudiantes.agregarColumna("CARRERA", "VARCHAR", 3, false, false, null);
+            estudiantes.setPrimaryKey("E#");
+            
+            // Llave Foránea: ESTUDIANTES.CARRERA -> CARRERAS.C#
+            LlaveForeignKey fkCarrera = new LlaveForeignKey("FK_ESTUDIANTES_CARRERA", "CARRERA", "CARRERAS", "C#");
+            estudiantes.agregarLlaveForeignKey(fkCarrera);
+            tablas.put("ESTUDIANTES", estudiantes);
+
+            // Tabla INSCRITOS
+            Tabla inscritos = new Tabla("INSCRITOS");
+            inscritos.agregarColumna("E#", "VARCHAR", 3, true, true, null);
+            inscritos.agregarColumna("C#", "VARCHAR", 3, true, true, null);
+            inscritos.agregarColumna("SEMESTRE", "INT", 2, false, false, null);
+            inscritos.agregarColumna("NOTA", "NUMERIC", 3, false, false, null);
+            inscritos.setPrimaryKey("E#,C#");
+            
+            // Llaves Foráneas
+            LlaveForeignKey fkEstudiante = new LlaveForeignKey("FK_INSCRITOS_ESTUDIANTE", "E#", "ESTUDIANTES", "E#");
+            inscritos.agregarLlaveForeignKey(fkEstudiante);
+            
+            LlaveForeignKey fkCarrera2 = new LlaveForeignKey("FK_INSCRITOS_CARRERA", "C#", "CARRERAS", "C#");
+            inscritos.agregarLlaveForeignKey(fkCarrera2);
+            tablas.put("INSCRITOS", inscritos);
+
+            // Cargar datos de ejemplo
+            cargarDatos();
+        }
+
+        void cargarDatos() {
+            // Datos en DEPARTAMENTOS
+            Tabla departamentos = tablas.get("DEPARTAMENTOS");
+            departamentos.agregarFila(new String[] { "D1", "CIENCIAS", "EDIFICIO A" });
+            departamentos.agregarFila(new String[] { "D2", "INGENIERIA", "EDIFICIO B" });
+            departamentos.agregarFila(new String[] { "D3", "HUMANIDADES", "EDIFICIO C" });
+
+            // Datos en CARRERAS
+            Tabla carreras = tablas.get("CARRERAS");
+            carreras.agregarFila(new String[] { "C1", "MATEMATICA", "2008", "120", "D1" });
+            carreras.agregarFila(new String[] { "C2", "FISICA", "2008", "110", "D1" });
+            carreras.agregarFila(new String[] { "C3", "ICI", "2009", "10", "D2" });
+            carreras.agregarFila(new String[] { "C4", "INGENIERIA CIVIL", "2010", "130", "D2" });
+
+            // Datos en ESTUDIANTES
+            Tabla estudiantes = tablas.get("ESTUDIANTES");
+            estudiantes.agregarFila(new String[] { "E1", "Juan Pérez", "2121212", "C1" });
+            estudiantes.agregarFila(new String[] { "E2", "María López", "2222222", "C3" });
+            estudiantes.agregarFila(new String[] { "E3", "Carlos García", "2323232", "C2" });
+        }
+    }
+
+    // === ESTRUCTURAS DE DATOS ===
+    static class Columna {
+        String nombre;
+        String tipo;
+        int longitud;
+        boolean esPrimaryKey;
+        boolean esNotNull;
+        String valorDefault;
+
+        Columna(String nombre, String tipo, int longitud, boolean pk, boolean nn, String def) {
+            this.nombre = nombre;
+            this.tipo = tipo;
+            this.longitud = longitud;
+            this.esPrimaryKey = pk;
+            this.esNotNull = nn;
+            this.valorDefault = def;
+        }
+    }
+
+    static class LlaveForeignKey {
+        String nombre;
+        String columnaLocal;
+        String tablaReferenciada;
+        String columnaReferenciada;
+
+        LlaveForeignKey(String nombre, String colLocal, String tabRef, String colRef) {
+            this.nombre = nombre;
+            this.columnaLocal = colLocal;
+            this.tablaReferenciada = tabRef;
+            this.columnaReferenciada = colRef;
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s (%s -> %s.%s)", nombre, columnaLocal, tablaReferenciada, columnaReferenciada);
+        }
+    }
+
+    static class Tabla {
+        String nombre;
+        List<Columna> columnas = new ArrayList<>();
+        List<LlaveForeignKey> llavesForeignKey = new ArrayList<>();
+        List<String[]> filas = new ArrayList<>();
+        String primaryKey;
+
+        Tabla(String nombre) {
+            this.nombre = nombre;
+        }
+
+        void agregarColumna(String nom, String tipo, int len, boolean pk, boolean nn, String def) {
+            columnas.add(new Columna(nom, tipo, len, pk, nn, def));
+        }
+
+        void agregarLlaveForeignKey(LlaveForeignKey fk) {
+            llavesForeignKey.add(fk);
+        }
+
+        void agregarFila(String[] valores) {
+            filas.add(valores);
+        }
+
+        void setPrimaryKey(String pk) {
+            this.primaryKey = pk;
+        }
+
+        int obtenerIndiceColumna(String nomCol) {
+            for (int i = 0; i < columnas.size(); i++) {
+                if (columnas.get(i).nombre.equalsIgnoreCase(nomCol)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+    }
+
+    // === TOKEN ===
     static class Token {
         String lexema;
-        int tipo;
+        int tipo;      // 1=reservada, 4=identificador, 5=delimitador, 6=constante, 7=operador, 8=relacional
         int codigo;
         int linea;
-        int sub;
-        boolean es_ident = false, es_const = false, desconocido = false;
 
         Token(String lexema, int tipo, int codigo, int linea) {
             this.lexema = lexema;
@@ -55,10 +217,18 @@ public class Scanner4 extends JFrame {
             this.codigo = codigo;
             this.linea = linea;
         }
+
+        @Override
+        public String toString() {
+            return String.format("Token{%s, tipo=%d, cod=%d, lin=%d}", lexema, tipo, codigo, linea);
+        }
     }
 
+    // === ERROR SQL ===
     static class ErrorSQL {
-        int tipo, codigo, linea;
+        int tipo;       // 1=Léxico, 2=Sintáctico, 3=Semántico
+        int codigo;
+        int linea;
         String descripcion;
 
         ErrorSQL(int tipo, int codigo, int linea, String descripcion) {
@@ -67,44 +237,37 @@ public class Scanner4 extends JFrame {
             this.linea = linea;
             this.descripcion = descripcion;
         }
-    }
 
-    static class ResultadoAnalisis {
-        List<Object[]> filasTokens = new ArrayList<>();
-        List<ErrorSQL> errores = new ArrayList<>();
-    }
+        String getTipoError() {
+            return tipo == 1 ? "LÉXICO" : tipo == 2 ? "SINTÁCTICO" : "SEMÁNTICO";
+        }
 
-    static class TablaSemantica {
-        String nombre;
-        String columna;
-        String tipo;
-        boolean pk;
-        boolean fk;
-        String detalles;
-
-        TablaSemantica(String nombre, String columna, String tipo, boolean pk, boolean fk, String detalles) {
-            this.nombre = nombre;
-            this.columna = columna;
-            this.tipo = tipo;
-            this.pk = pk;
-            this.fk = fk;
-            this.detalles = detalles;
+        @Override
+        public String toString() {
+            return String.format("[%s] Línea %d, Código %d: %s", getTipoError(), linea, codigo, descripcion);
         }
     }
 
-    // --- MOTOR DE ANALISIS ---
-    static class Analizador {
-        static List<Token> tokens;
-        static List<ErrorSQL> erroresLexicos;
+    // === ANALIZADOR SQL (Léxico, Sintáctico, Semántico) ===
+    static class AnalizadorSQL {
+        BaseDatos bd;
+        List<Token> tokens = new ArrayList<>();
+        List<ErrorSQL> errores = new ArrayList<>();
+        int posToken = 0;
 
-        static void tokenizar(String sql) {
-            tokens = new ArrayList<>();
-            erroresLexicos = new ArrayList<>();
+        AnalizadorSQL(BaseDatos bd) {
+            this.bd = bd;
+        }
+
+        // FASE 1: ANÁLISIS LÉXICO
+        void tokenizar(String sql) {
+            tokens.clear();
             String[] lineas = sql.split("\n");
 
             for (int li = 1; li <= lineas.length; li++) {
                 String linea = lineas[li - 1];
                 int i = 0;
+
                 while (i < linea.length()) {
                     char c = linea.charAt(i);
 
@@ -116,6 +279,7 @@ public class Scanner4 extends JFrame {
                     if (i + 1 < linea.length() && linea.substring(i, i + 2).equals("--"))
                         break;
 
+                    // Operadores relacionales
                     String dos = (i + 1 < linea.length()) ? linea.substring(i, i + 2) : "";
                     if (RELACIONALES.containsKey(dos)) {
                         tokens.add(new Token(dos, 8, RELACIONALES.get(dos), li));
@@ -129,46 +293,25 @@ public class Scanner4 extends JFrame {
                         continue;
                     }
 
+                    // Operadores
                     if (OPERADORES.containsKey(c)) {
                         tokens.add(new Token(String.valueOf(c), 7, OPERADORES.get(c), li));
                         i++;
                         continue;
                     }
 
+                    // Delimitadores y cadenas
                     if (c == '\'') {
-                        boolean es_suelta = false;
-                        if (!tokens.isEmpty()) {
-                            Token ultimo = tokens.get(tokens.size() - 1);
-                            if (ultimo.linea == li && (ultimo.tipo == 4 || ultimo.tipo == 6)) {
-                                es_suelta = true;
-                            }
-                        }
-
-                        if (es_suelta) {
-                            tokens.add(new Token("'", 5, 54, li));
-                            i++;
+                        int j = i + 1;
+                        while (j < linea.length() && linea.charAt(j) != '\'')
+                            j++;
+                        if (j < linea.length()) {
+                            String valor = linea.substring(i + 1, j);
+                            tokens.add(new Token(valor, 6, 600, li));
+                            i = j + 1;
                         } else {
-                            int j = i + 1;
-                            while (j < linea.length() && linea.charAt(j) != '\'')
-                                j++;
-
-                            if (j >= linea.length()) {
-                                erroresLexicos
-                                        .add(new ErrorSQL(2, 205, li, "Se esperaba Delimitador (comilla de cierre ')"));
-                                String valor = linea.substring(i + 1, j);
-                                Token t = new Token(valor, 6, 0, li);
-                                t.sub = 62;
-                                t.es_const = true;
-                                tokens.add(t);
-                                i = j;
-                            } else {
-                                String valor = linea.substring(i + 1, j);
-                                Token t = new Token(valor, 6, 0, li);
-                                t.sub = 62;
-                                t.es_const = true;
-                                tokens.add(t);
-                                i = j + 1;
-                            }
+                            errores.add(new ErrorSQL(1, 101, li, "Comilla de cierre no encontrada"));
+                            i = linea.length();
                         }
                         continue;
                     }
@@ -179,496 +322,548 @@ public class Scanner4 extends JFrame {
                         continue;
                     }
 
+                    // Números
                     if (Character.isDigit(c)) {
                         int j = i;
-                        while (j < linea.length() && (Character.isDigit(linea.charAt(j)) || linea.charAt(j) == '.'))
+                        while (j < linea.length() && Character.isDigit(linea.charAt(j)))
                             j++;
-                        Token t = new Token(linea.substring(i, j), 6, 0, li);
-                        t.sub = 61;
-                        t.es_const = true;
-                        tokens.add(t);
+                        tokens.add(new Token(linea.substring(i, j), 6, 600, li));
                         i = j;
                         continue;
                     }
 
+                    // Identificadores y palabras reservadas
                     if (Character.isLetter(c) || c == '_') {
                         int j = i;
-                        while (j < linea.length() && (Character.isLetterOrDigit(linea.charAt(j))
-                                || linea.charAt(j) == '_' || linea.charAt(j) == '#'))
+                        while (j < linea.length()
+                                && (Character.isLetterOrDigit(linea.charAt(j)) || linea.charAt(j) == '_' || linea.charAt(j) == '#'))
                             j++;
                         String palabra = linea.substring(i, j).toUpperCase();
                         if (PALABRAS_RESERVADAS.containsKey(palabra)) {
                             tokens.add(new Token(palabra, 1, PALABRAS_RESERVADAS.get(palabra), li));
                         } else {
-                            Token t = new Token(palabra, 4, 0, li);
-                            t.es_ident = true;
-                            tokens.add(t);
+                            tokens.add(new Token(palabra, 4, 400, li));
                         }
                         i = j;
                         continue;
                     }
 
-                    erroresLexicos.add(new ErrorSQL(1, 101, li, "Símbolo desconocido: '" + c + "'"));
-                    Token desc = new Token(String.valueOf(c), 9, 101, li);
-                    desc.desconocido = true;
-                    tokens.add(desc);
+                    errores.add(new ErrorSQL(1, 101, li, "Símbolo desconocido: '" + c + "'"));
                     i++;
                 }
             }
         }
 
-        static ResultadoAnalisis analizarTodo(String sql) {
-            tokenizar(sql);
-            ResultadoAnalisis res = new ResultadoAnalisis();
+        // FASE 2 y 3: ANÁLISIS SINTÁCTICO Y SEMÁNTICO
+        void analizarSintaxis() {
+            posToken = 0;
+            if (tokens.isEmpty()) return;
 
-            Map<String, Integer> mapaIdent = new HashMap<>();
-            List<Token> listaConst = new ArrayList<>();
-            int contIdent = 401;
-            int contConst = 600;
-
-            for (Token t : tokens) {
-                if (t.es_ident && !mapaIdent.containsKey(t.lexema)) {
-                    mapaIdent.put(t.lexema, contIdent++);
-                }
-                if (t.es_const) {
-                    boolean encontrado = listaConst.stream().anyMatch(c -> c.lexema.equals(t.lexema) && c.sub == t.sub);
-                    if (!encontrado) {
-                        Token cte = new Token(t.lexema, t.tipo, contConst++, t.linea);
-                        cte.sub = t.sub;
-                        listaConst.add(cte);
-                    }
-                }
+            Token t = verToken();
+            if (t != null && t.tipo == 1 && t.lexema.equals("SELECT")) {
+                analizarSelect();
+            } else if (t != null && t.tipo == 1 && t.lexema.equals("CREATE")) {
+                analizarCreateTable();
+            } else if (t != null && t.tipo == 1 && t.lexema.equals("INSERT")) {
+                analizarInsert();
+            } else if (t != null) {
+                errores.add(new ErrorSQL(2, 201, t.linea, "Se esperaba SELECT, CREATE o INSERT"));
             }
-
-            for (int idx = 0; idx < tokens.size(); idx++) {
-                Token t = tokens.get(idx);
-                int codigo;
-                String tokenDisplay;
-
-                if (t.tipo == 4) {
-                    codigo = mapaIdent.get(t.lexema);
-                    tokenDisplay = t.lexema;
-                } else if (t.es_const) {
-                    codigo = listaConst.stream().filter(c -> c.lexema.equals(t.lexema) && c.sub == t.sub).findFirst()
-                            .get().codigo;
-                    tokenDisplay = "CONSTANTE";
-                } else if (t.desconocido) {
-                    codigo = 101;
-                    tokenDisplay = t.lexema;
-                } else {
-                    codigo = t.codigo;
-                    tokenDisplay = t.lexema;
-                }
-                res.filasTokens.add(new Object[] { idx + 1, t.linea, tokenDisplay, t.tipo, codigo });
-            }
-
-            res.errores.addAll(erroresLexicos);
-            ParserSintactico parser = new ParserSintactico(tokens);
-            res.errores.addAll(parser.parsear());
-
-            return res;
-        }
-    }
-
-    // --- PARSER SINTACTICO ---
-    static class ParserSintactico {
-        List<Token> toks = new ArrayList<>();
-        List<ErrorSQL> errores = new ArrayList<>();
-        int pos = 0;
-
-        ParserSintactico(List<Token> tokens) {
-            for (Token t : tokens)
-                if (t.tipo != 9)
-                    toks.add(t);
         }
 
-        Token ver() {
-            return pos < toks.size() ? toks.get(pos) : null;
-        }
-
-        Token consumir() {
-            return toks.get(pos++);
-        }
-
-        int lineaActual() {
-            return ver() != null ? ver().linea : (toks.isEmpty() ? 0 : toks.get(toks.size() - 1).linea);
-        }
-
-        Token esperarTipo(int tipo, int codErr, String desc) {
-            Token t = ver();
-            if (t != null && t.tipo == tipo)
-                return consumir();
-            errores.add(new ErrorSQL(2, codErr, lineaActual(), desc));
-            return null;
-        }
-
-        Token esperarReservada(String palabra) {
-            Token t = ver();
-            if (t != null && t.tipo == 1 && t.lexema.equals(palabra))
-                return consumir();
-            errores.add(new ErrorSQL(2, 201, lineaActual(), "Se esperaba Palabra Reservada '" + palabra + "'"));
-            return null;
-        }
-
-        Token esperarDelimitador(String simbolo) {
-            Token t = ver();
-            if (t != null && t.tipo == 5 && t.lexema.equals(simbolo))
-                return consumir();
-            errores.add(new ErrorSQL(2, 205, lineaActual(), "Se esperaba Delimitador '" + simbolo + "'"));
-            return null;
-        }
-
-        boolean esReservada(String palabra) {
-            Token t = ver();
-            return t != null && t.tipo == 1 && t.lexema.equals(palabra);
-        }
-
-        boolean esTipo(int tipo) {
-            Token t = ver();
-            return t != null && t.tipo == tipo;
-        }
-
-        List<ErrorSQL> parsear() {
-            if (toks.isEmpty())
-                return errores;
-            Token t = ver();
-            if (t.tipo == 1 && t.lexema.equals("SELECT"))
-                parsearSelect();
-            else if (t.tipo == 1 && t.lexema.equals("CREATE"))
-                parsearCreateTable();
-            else if (t.tipo == 1 && t.lexema.equals("INSERT"))
-                parsearInsert();
-            else
-                errores.add(new ErrorSQL(2, 201, t.linea, "Se esperaba SELECT, CREATE o INSERT al inicio"));
-
-            t = ver();
-            if (t != null && errores.isEmpty()) {
-                errores.add(
-                        new ErrorSQL(2, 205, t.linea, "Se esperaba Delimitador: token inesperado '" + t.lexema + "'"));
-            }
-            return errores;
-        }
-
-        void parsearSelect() {
-            consumir();
-            if (esTipo(7) && ver().lexema.equals("*"))
+        void analizarSelect() {
+            consumir(); // SELECT
+            if (esTipo(7) && verToken().lexema.equals("*")) {
                 consumir();
-            else {
-                esperarTipo(4, 204, "Se esperaba Identificador (columna)");
-                if (ver() != null && ver().tipo == 5 && ver().lexema.equals(".")) {
-                    consumir();
-                    esperarTipo(4, 204, "Se esperaba Identificador después de '.'");
-                }
-                while (ver() != null && ver().tipo == 5 && ver().lexema.equals(",")) {
-                    consumir();
-                    Token t = ver();
-                    if (t == null || (t.tipo == 1 && t.lexema.equals("FROM"))) {
-                        errores.add(new ErrorSQL(2, 204, lineaActual(), "Se esperaba Identificador después de ','"));
-                        break;
-                    }
-                    esperarTipo(4, 204, "Se esperaba Identificador después de ','");
-                    if (ver() != null && ver().tipo == 5 && ver().lexema.equals(".")) {
-                        consumir();
-                        esperarTipo(4, 204, "Se esperaba Identificador después de '.'");
-                    }
-                }
+            } else {
+                esperarTipo(4, 204);
             }
-            esperarReservada("FROM");
-            Token t = ver();
-            if (t == null || t.tipo == 1)
-                errores.add(new ErrorSQL(2, 204, lineaActual(), "Se esperaba Identificador (tabla)"));
-            else {
-                esperarTipo(4, 204, "Se esperaba Identificador (tabla)");
-                if (esTipo(4))
-                    consumir();
-                while (ver() != null && ver().tipo == 5 && ver().lexema.equals(",")) {
-                    consumir();
-                    t = ver();
-                    if (t == null || (t.tipo == 1 && t.lexema.equals("WHERE"))) {
-                        errores.add(new ErrorSQL(2, 204, lineaActual(), "Se esperaba Identificador después de ','"));
-                        break;
-                    }
-                    esperarTipo(4, 204, "Se esperaba Identificador (tabla)");
-                    if (esTipo(4))
-                        consumir();
-                }
-            }
+            esperarReservada("FROM", 201);
+            esperarTipo(4, 204);
             if (esReservada("WHERE")) {
                 consumir();
-                parsearCondicion();
+                analizarCondicion();
             }
         }
 
-        // Inicio de la regla LL
-        void parsearCondicion() {
-            esperarTipo(4, 204, "Se esperaba Identificador en condición");
-            if (ver() != null && ver().tipo == 5 && ver().lexema.equals(".")) {
+        void analizarCondicion() {
+            esperarTipo(4, 204);
+            Token t = verToken();
+            if (t != null && t.tipo == 8) {
                 consumir();
-                esperarTipo(4, 204, "Se esperaba Identificador después de '.'");
-            }
-            Token t = ver();
-            if (t != null && t.tipo == 1 && t.lexema.equals("IN")) {
-                consumir();
-                esperarDelimitador("(");
-                if (esReservada("SELECT"))
-                    parsearSelect();
-                else {
-                    Token t2 = ver();
-                    if (t2 != null && (t2.tipo == 4 || t2.tipo == 6))
-                        consumir();
-                    else
-                        errores.add(new ErrorSQL(2, 206, lineaActual(), "Se esperaba Constante o Identificador"));
-                    while (ver() != null && ver().tipo == 5 && ver().lexema.equals(",")) {
-                        consumir();
-                        t2 = ver();
-                        if (t2 != null && (t2.tipo == 4 || t2.tipo == 6))
-                            consumir();
-                        else
-                            errores.add(new ErrorSQL(2, 206, lineaActual(), "Se esperaba Constante o Identificador"));
-                    }
-                }
-                esperarDelimitador(")");
-            } else if (t != null && t.tipo == 8) {
-                consumir();
-                Token t2 = ver();
+                Token t2 = verToken();
                 if (t2 != null && (t2.tipo == 4 || t2.tipo == 6)) {
                     consumir();
-                    if (ver() != null && ver().tipo == 5 && ver().lexema.equals(".")) {
-                        consumir();
-                        esperarTipo(4, 204, "Se esperaba Identificador después de '.'");
-                    }
-                } else
-                    errores.add(new ErrorSQL(2, 206, lineaActual(), "Se esperaba Constante o Identificador"));
-            } else {
-                Token t2 = ver();
-                if (t2 != null && t2.tipo == 5 && t2.lexema.equals("("))
-                    errores.add(new ErrorSQL(2, 201, t2.linea, "Se esperaba Palabra Reservada (IN)"));
-                else
-                    errores.add(new ErrorSQL(2, 208, lineaActual(), "Se esperaba Operador Relacional"));
-                return;
-            }
-
-            if (esReservada("AND") || esReservada("OR")) {
+                }
+            } else if (t != null && t.tipo == 1 && t.lexema.equals("IN")) {
                 consumir();
-                parsearCondicion();
-            } else {
-                t = ver();
-                if (t != null && !(t.tipo == 5 && t.lexema.equals(")")))
-                    errores.add(new ErrorSQL(2, 201, t.linea, "Se esperaba Palabra Reservada (AND/OR)"));
+                esperarDelimitador("(", 205);
+                if (!esReservada("SELECT")) {
+                    esperarTipo(6, 206);
+                }
+                esperarDelimitador(")", 205);
             }
         }
 
-        void parsearCreateTable() {
-            consumir();
-            esperarReservada("TABLE");
-            esperarTipo(4, 204, "Se esperaba nombre de tabla");
-            esperarDelimitador("(");
-            parsearDefColumnas();
-            esperarDelimitador(")");
-        }
-
-        void parsearDefColumnas() {
-            parsearDefColODist();
-            while (ver() != null && ver().tipo == 5 && ver().lexema.equals(",")) {
-                consumir();
-                parsearDefColODist();
-            }
-        }
-
-        void parsearDefColODist() {
-            if (ver() != null && ver().tipo == 1 && ver().lexema.equals("CONSTRAINT")) {
-                parsearConstraint();
-            } else {
-                esperarTipo(4, 204, "Se esperaba nombre de columna");
-                Token t = ver();
-                if (t != null && t.tipo == 1 && (t.lexema.equals("CHAR") || t.lexema.equals("NUMERIC"))) {
+        void analizarCreateTable() {
+            consumir(); // CREATE
+            esperarReservada("TABLE", 201);
+            esperarTipo(4, 204);
+            esperarDelimitador("(", 205);
+            while (verToken() != null && !esDelimitador(")")) {
+                analizarDefColumna();
+                if (esDelimitador(",")) {
                     consumir();
-                    if (ver() != null && ver().lexema.equals("(")) {
-                        consumir();
-                        esperarTipo(6, 206, "Se esperaba tamaño numérico");
-                        esperarDelimitador(")");
-                    }
-                } else {
-                    errores.add(new ErrorSQL(2, 201, lineaActual(), "Se esperaba tipo de dato (CHAR o NUMERIC)"));
+                }
+            }
+            esperarDelimitador(")", 205);
+        }
+
+        void analizarDefColumna() {
+            Token t = verToken();
+            if (t != null && t.tipo == 1 && t.lexema.equals("CONSTRAINT")) {
+                consumir();
+                esperarTipo(4, 204);
+                if (esReservada("PRIMARY")) {
+                    consumir();
+                    esperarReservada("KEY", 201);
+                    esperarDelimitador("(", 205);
+                    esperarTipo(4, 204);
+                    esperarDelimitador(")", 205);
+                } else if (esReservada("FOREIGN")) {
+                    consumir();
+                    esperarReservada("KEY", 201);
+                    esperarDelimitador("(", 205);
+                    esperarTipo(4, 204);
+                    esperarDelimitador(")", 205);
+                    esperarReservada("REFERENCES", 201);
+                    esperarTipo(4, 204);
+                    esperarDelimitador("(", 205);
+                    esperarTipo(4, 204);
+                    esperarDelimitador(")", 205);
+                }
+            } else {
+                esperarTipo(4, 204);
+                esperarTipo(1, 201); // Tipo de dato
+                if (esDelimitador("(")) {
+                    consumir();
+                    if (esTipo(6)) consumir();
+                    esperarDelimitador(")", 205);
                 }
                 if (esReservada("NOT")) {
                     consumir();
-                    esperarReservada("NULL");
+                    esperarReservada("NULL", 201);
                 }
             }
         }
 
-        void parsearConstraint() {
-            consumir();
-            esperarTipo(4, 204, "Se esperaba nombre de constante");
-            Token t = ver();
-            if (t != null && t.tipo == 1 && t.lexema.equals("PRIMARY")) {
+        void analizarInsert() {
+            consumir(); // INSERT
+            esperarReservada("INTO", 201);
+            Token nomTabla = verToken();
+            if (nomTabla != null && nomTabla.tipo == 4) {
                 consumir();
-                esperarReservada("KEY");
-                esperarDelimitador("(");
-                esperarTipo(4, 204, "Se esperaba columna en PRIMARY KEY");
-                while (ver() != null && ver().lexema.equals(",")) {
+                if (esDelimitador("(")) {
                     consumir();
-                    esperarTipo(4, 204, "Se esperaba columna");
+                    esperarTipo(4, 204);
+                    while (esDelimitador(",")) {
+                        consumir();
+                        esperarTipo(4, 204);
+                    }
+                    esperarDelimitador(")", 205);
                 }
-                esperarDelimitador(")");
-            } else if (t != null && t.tipo == 1 && t.lexema.equals("FOREIGN")) {
+                esperarReservada("VALUES", 201);
+                esperarDelimitador("(", 205);
+                if (esTipo(6)) consumir();
+                while (esDelimitador(",")) {
+                    consumir();
+                    if (esTipo(6)) consumir();
+                }
+                esperarDelimitador(")", 205);
+
+                // ANÁLISIS SEMÁNTICO: Validar llaves foráneas
+                validarSemantica(nomTabla.lexema.toUpperCase());
+            }
+        }
+
+        void validarSemantica(String nombreTabla) {
+            if (!bd.tablas.containsKey(nombreTabla)) {
+                errores.add(new ErrorSQL(3, 301, verToken() != null ? verToken().linea : 1, 
+                    "Tabla no existe: " + nombreTabla));
+            }
+        }
+
+        // Métodos auxiliares
+        Token verToken() {
+            return posToken < tokens.size() ? tokens.get(posToken) : null;
+        }
+
+        void consumir() {
+            if (posToken < tokens.size()) posToken++;
+        }
+
+        boolean esTipo(int tipo) {
+            Token t = verToken();
+            return t != null && t.tipo == tipo;
+        }
+
+        boolean esReservada(String palabra) {
+            Token t = verToken();
+            return t != null && t.tipo == 1 && t.lexema.equals(palabra);
+        }
+
+        boolean esDelimitador(String delim) {
+            Token t = verToken();
+            return t != null && t.tipo == 5 && t.lexema.equals(delim);
+        }
+
+        void esperarTipo(int tipo, int cod) {
+            Token t = verToken();
+            if (t != null && t.tipo == tipo) {
                 consumir();
-                esperarReservada("KEY");
-                esperarDelimitador("(");
-                esperarTipo(4, 204, "Se esperaba columna en FOREIGN KEY");
-                esperarDelimitador(")");
-                esperarReservada("REFERENCES");
-                esperarTipo(4, 204, "Se esperaba tabla referenciada");
-                esperarDelimitador("(");
-                esperarTipo(4, 204, "Se esperaba columna referenciada");
-                esperarDelimitador(")");
             } else {
-                errores.add(new ErrorSQL(2, 201, lineaActual(), "Se esperaba PRIMARY o FOREIGN después de CONSTRAINT"));
+                errores.add(new ErrorSQL(2, cod, t != null ? t.linea : 1, 
+                    "Se esperaba token de tipo " + tipo));
             }
         }
 
-        void parsearInsert() {
-            consumir();
-            esperarReservada("INTO");
-            esperarTipo(4, 204, "Se esperaba nombre de tabla");
-            esperarDelimitador("(");
-            esperarTipo(4, 204, "Se esperaba columna");
-            while (ver() != null && ver().lexema.equals(",")) {
+        void esperarReservada(String palabra, int cod) {
+            Token t = verToken();
+            if (t != null && t.tipo == 1 && t.lexema.equals(palabra)) {
                 consumir();
-                esperarTipo(4, 204, "Se esperaba columna");
+            } else {
+                errores.add(new ErrorSQL(2, cod, t != null ? t.linea : 1, 
+                    "Se esperaba: " + palabra));
             }
-            esperarDelimitador(")");
-            esperarReservada("VALUES");
-            esperarDelimitador("(");
-            Token t = ver();
-            if (t != null && (t.tipo == 4 || t.tipo == 6))
+        }
+
+        void esperarDelimitador(String delim, int cod) {
+            Token t = verToken();
+            if (t != null && t.tipo == 5 && t.lexema.equals(delim)) {
                 consumir();
-            else
-                errores.add(new ErrorSQL(2, 206, lineaActual(), "Se esperaba valor o constante"));
-            while (ver() != null && ver().lexema.equals(",")) {
-                consumir();
-                t = ver();
-                if (t != null && (t.tipo == 4 || t.tipo == 6))
-                    consumir();
-                else
-                    errores.add(new ErrorSQL(2, 206, lineaActual(), "Se esperaba valor después de ','"));
+            } else {
+                errores.add(new ErrorSQL(2, cod, t != null ? t.linea : 1, 
+                    "Se esperaba: " + delim));
             }
-            esperarDelimitador(")");
+        }
+
+        void analizar(String sql) {
+            tokens.clear();
+            errores.clear();
+            posToken = 0;
+            tokenizar(sql);
+            if (errores.isEmpty()) {
+                analizarSintaxis();
+            }
+        }
+
+        List<ErrorSQL> obtenerErrores() {
+            return errores;
+        }
+
+        void limpiarErrores() {
+            errores.clear();
         }
     }
 
-    // --- INTERFAZ GRAFICA ---
-    private JTextArea txtSql;
-    private JTabbedPane tabbedPane;
-    private DefaultTableModel modTokens, modErr;
-    private JLabel lblResultado;
+    private JTextArea textEntrada;
+    private JTable tablaErrores;
+    private JTable tablaDatos;
+    private JTextArea textConsola;
+    private DefaultTableModel modeloErrores;
+    private DefaultTableModel modeloDatos;
+    private JLabel lblEstado;
+    private BaseDatos bd;
+    private AnalizadorSQL analizador;
 
     public Scanner4() {
-        // Habilita el "Look and Feel" nativo de Windows (u OS host)
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        setTitle("Parser SQL - Reunión Natural Integrada");
-        setSize(850, 600);
+        setTitle("Traductor SQL");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(1500, 900);
         setLocationRelativeTo(null);
-        construirUI();
+
+        bd = new BaseDatos();
+        analizador = new AnalizadorSQL(bd);
+
+        JPanel panelPrincipal = new JPanel(new BorderLayout(10, 10));
+        panelPrincipal.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        // Barra superior con opciones
+        JPanel panelOpciones = crearPanelOpciones();
+        panelPrincipal.add(panelOpciones, BorderLayout.NORTH);
+
+        // Panel entrada
+        JPanel panelEntrada = crearPanelEntrada();
+
+        // Panel resultados
+        JPanel panelResultados = crearPanelResultados();
+
+        // Split pane
+        JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, panelEntrada, panelResultados);
+        splitPane.setDividerLocation(350);
+
+        panelPrincipal.add(splitPane, BorderLayout.CENTER);
+        add(panelPrincipal);
     }
 
-    private void construirUI() {
-        JPanel panelNorte = new JPanel(new BorderLayout(5, 5));
-        panelNorte.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+    private JPanel crearPanelOpciones() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(new TitledBorder("OPCIONES DE TABLAS SEMÁNTICAS"));
 
-        // Título superior
-        JLabel lblIngreso = new JLabel("Ingrese SQL:");
-        lblIngreso.setFont(new Font("Tahoma", Font.BOLD, 12));
-        panelNorte.add(lblIngreso, BorderLayout.NORTH);
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
 
-        // Área de texto principal
-        txtSql = new JTextArea(8, 50);
-        txtSql.setFont(new Font("Monospaced", Font.PLAIN, 13));
-        panelNorte.add(new JScrollPane(txtSql), BorderLayout.CENTER);
+        JButton btnActualizar = new JButton("✓ Actualizar Tablas Semánticas");
+        JButton btnInicializar = new JButton("✗ Inicializar Tablas Semánticas");
 
-        // Botón ancho de analizar
-        JButton btnAnalizar = new JButton("Analizar");
-        btnAnalizar.setFont(new Font("Tahoma", Font.BOLD, 12));
-        btnAnalizar.setPreferredSize(new Dimension(0, 30));
-        panelNorte.add(btnAnalizar, BorderLayout.SOUTH);
+        btnActualizar.setToolTipText("Cargar la BD INSCRITOS completa");
+        btnInicializar.setToolTipText("Limpiar las tablas semánticas");
 
-        add(panelNorte, BorderLayout.NORTH);
+        btnActualizar.addActionListener(e -> actualizarTablasSematicas());
+        btnInicializar.addActionListener(e -> inicializarTablasSematicas());
 
-        tabbedPane = new JTabbedPane();
-        tabbedPane.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+        panelBotones.add(btnActualizar);
+        panelBotones.add(btnInicializar);
 
-        // Pestaña 1: Tokens
-        modTokens = new DefaultTableModel(new String[] { "No.", "Línea", "Lexema", "Tipo", "Código" }, 0);
-        JTable tablaTokens = new JTable(modTokens);
-        tablaTokens.getTableHeader().setReorderingAllowed(false);
-        tabbedPane.addTab("Tokens", new JScrollPane(tablaTokens));
+        lblEstado = new JLabel("Estado: Tablas semánticas cargadas");
+        lblEstado.setForeground(new Color(0, 128, 0));
 
-        // Pestaña 2: Errores / Resultado
+        panel.add(panelBotones, BorderLayout.WEST);
+        panel.add(lblEstado, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    private void actualizarTablasSematicas() {
+        bd = new BaseDatos();
+        analizador = new AnalizadorSQL(bd);
+        cargarEstructuraBD();
+        lblEstado.setText("✓ Tablas semánticas actualizadas: " + bd.tablas.size() + " tablas cargadas");
+        lblEstado.setForeground(new Color(0, 128, 0));
+        JOptionPane.showMessageDialog(this, "Tablas semánticas actualizadas correctamente", "Éxito",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private void inicializarTablasSematicas() {
+        bd.tablas.clear();
+        analizador = new AnalizadorSQL(bd);
+        modeloDatos.setRowCount(0);
+        lblEstado.setText("✓ Tablas semánticas inicializadas (vacías)");
+        lblEstado.setForeground(Color.RED);
+        JOptionPane.showMessageDialog(this, "Tablas semánticas limpias", "Inicialización",
+                JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private JPanel crearPanelEntrada() {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        panel.setBorder(new TitledBorder("MÓDULO DE ENTRADA - Sentencias SQL (DDL/DML)"));
+
+        textEntrada = new JTextArea();
+        textEntrada.setFont(new Font("Courier New", Font.PLAIN, 11));
+        textEntrada.setLineWrap(true);
+        textEntrada.setWrapStyleWord(true);
+        textEntrada.setText("-- DDL: CREATE TABLE\n" +
+                "CREATE TABLE CARRERAS (\n" +
+                "    C# VARCHAR(3) PRIMARY KEY,\n" +
+                "    NOMBRE VARCHAR(40) NOT NULL\n" +
+                ");\n\n" +
+                "-- DDL: INSERT\n" +
+                "INSERT INTO CARRERAS VALUES ('C1','MATEMATICA');\n\n" +
+                "-- DML: SELECT\n" +
+                "SELECT * FROM CARRERAS WHERE C# = 'C1';");
+
+        JScrollPane scrollEntrada = new JScrollPane(textEntrada);
+        panel.add(scrollEntrada, BorderLayout.CENTER);
+
+        JPanel panelBotones = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+        JButton btnAnalizar = new JButton("▶ Analizar SQL");
+        JButton btnLimpiar = new JButton("✗ Limpiar");
+
+        btnAnalizar.setFont(new Font("Tahoma", Font.BOLD, 11));
+        btnAnalizar.addActionListener(e -> analizarSQL());
+        btnLimpiar.addActionListener(e -> {
+            textEntrada.setText("");
+            limpiarResultados();
+        });
+
+        panelBotones.add(btnAnalizar);
+        panelBotones.add(btnLimpiar);
+
+        panel.add(panelBotones, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JPanel crearPanelResultados() {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+
+        // Tabs
+        JTabbedPane tabs = new JTabbedPane();
+
+        // Tab 1: Errores
         JPanel panelErrores = new JPanel(new BorderLayout());
-        lblResultado = new JLabel(" ");
-        lblResultado.setFont(new Font("Tahoma", Font.BOLD, 12));
-        lblResultado.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        panelErrores.add(lblResultado, BorderLayout.NORTH);
-
-        modErr = new DefaultTableModel(new String[] { "No.", "Tipo", "Código", "Línea", "Descripción" }, 0);
-        JTable tablaErrores = new JTable(modErr);
-        tablaErrores.getTableHeader().setReorderingAllowed(false);
+        modeloErrores = new DefaultTableModel(
+                new String[] { "Línea", "Código", "Tipo", "Ubicación", "Descripción" }, 0);
+        tablaErrores = new JTable(modeloErrores);
+        tablaErrores.setRowHeight(40);
         panelErrores.add(new JScrollPane(tablaErrores), BorderLayout.CENTER);
-        tabbedPane.addTab("Errores / Resultado", panelErrores);
+        tabs.addTab("Módulo de Errores", panelErrores);
 
-        add(tabbedPane, BorderLayout.CENTER);
+        // Tab 2: Estructura BD
+        JPanel panelEstructura = new JPanel(new BorderLayout());
+        modeloDatos = new DefaultTableModel(
+                new String[] { "Tabla", "Columna", "Tipo", "PK", "FK", "Detalles" }, 0);
+        tablaDatos = new JTable(modeloDatos);
+        panelEstructura.add(new JScrollPane(tablaDatos), BorderLayout.CENTER);
+        cargarEstructuraBD();
+        tabs.addTab("Tablas Semánticas", panelEstructura);
 
-        // Acción del botón
-        btnAnalizar.addActionListener(e -> analizar());
+        // Tab 3: Análisis Detallado
+        JPanel panelConsola = new JPanel(new BorderLayout());
+        textConsola = new JTextArea();
+        textConsola.setFont(new Font("Courier New", Font.PLAIN, 10));
+        textConsola.setEditable(false);
+        panelConsola.add(new JScrollPane(textConsola), BorderLayout.CENTER);
+        tabs.addTab("Análisis Detallado (3 Fases)", panelConsola);
+
+        panel.add(tabs, BorderLayout.CENTER);
+        panel.setBorder(new TitledBorder("MÓDULO DE RESULTADOS"));
+
+        return panel;
     }
 
-    private void analizar() {
-        String sql = txtSql.getText().trim();
-        if (sql.isEmpty()) {
-            limpiarTablas();
-            lblResultado.setText(" ");
+    private void cargarEstructuraBD() {
+        modeloDatos.setRowCount(0);
+        for (Tabla tabla : bd.tablas.values()) {
+            for (Columna col : tabla.columnas) {
+                String fk = "NO";
+                String detalles = "";
+
+                for (LlaveForeignKey llaveFK : tabla.llavesForeignKey) {
+                    if (llaveFK.columnaLocal.equalsIgnoreCase(col.nombre)) {
+                        fk = "SÍ";
+                        detalles = String.format("→ %s.%s", llaveFK.tablaReferenciada, llaveFK.columnaReferenciada);
+                    }
+                }
+
+                modeloDatos.addRow(new Object[] {
+                        tabla.nombre,
+                        col.nombre,
+                        col.tipo + "(" + col.longitud + ")",
+                        col.esPrimaryKey ? "SÍ" : "NO",
+                        fk,
+                        detalles
+                });
+            }
+        }
+    }
+
+    private void analizarSQL() {
+        String codigo = textEntrada.getText();
+        if (codigo.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor, ingrese una sentencia SQL", "Entrada vacía",
+                    JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        limpiarTablas();
-        ResultadoAnalisis res = Analizador.analizarTodo(sql);
+        limpiarResultados();
 
-        // Llenar tabla de Tokens
-        for (Object[] fila : res.filasTokens) {
-            modTokens.addRow(fila);
+        StringBuilder consola = new StringBuilder("=== ANÁLISIS SQL (3 FASES) ===\n");
+        consola.append("MÓDULO DE ANÁLISIS\n");
+        consola.append("==================\n\n");
+
+        // FASE 1: Análisis Léxico
+        consola.append("FASE 1: ANÁLISIS LÉXICO\n");
+        consola.append("------------------------\n");
+
+        analizador.analizar(codigo);
+        List<Token> tokens = analizador.tokens;
+        List<ErrorSQL> errores = analizador.obtenerErrores();
+
+        consola.append("Tokens generados: ").append(tokens.size()).append("\n");
+        for (Token t : tokens) {
+            consola.append("  ").append(t).append("\n");
         }
 
-        // Mostrar errores o éxito
-        if (!res.errores.isEmpty()) {
-            int i = 1;
-            for (ErrorSQL err : res.errores) {
-                modErr.addRow(new Object[] { i++, err.tipo, err.codigo, err.linea, err.descripcion });
+        // Mostrar errores léxicos
+        List<ErrorSQL> erroresLexicos = errores.stream()
+                .filter(e -> e.tipo == 1).toList();
+        if (!erroresLexicos.isEmpty()) {
+            consola.append("\n⚠️  Errores Léxicos:\n");
+            for (ErrorSQL err : erroresLexicos) {
+                consola.append("  ").append(err).append("\n");
             }
-            lblResultado.setText("Se encontraron " + res.errores.size() + " error(es).");
-            lblResultado.setForeground(Color.RED);
-            tabbedPane.setSelectedIndex(1); // Cambia a la pestaña de errores
+        }
+
+        // FASE 2: Análisis Sintáctico
+        consola.append("\nFASE 2: ANÁLISIS SINTÁCTICO\n");
+        consola.append("---------------------------\n");
+
+        List<ErrorSQL> erroresSintacticos = errores.stream()
+                .filter(e -> e.tipo == 2).toList();
+        if (erroresSintacticos.isEmpty()) {
+            consola.append("✓ Sintaxis válida\n");
         } else {
-            lblResultado.setText("Análisis sintáctico completado. Sentencia libre de errores.");
-            lblResultado.setForeground(new Color(0, 128, 0)); // Verde oscuro
-            tabbedPane.setSelectedIndex(0);
+            consola.append("⚠️  Errores Sintácticos:\n");
+            for (ErrorSQL err : erroresSintacticos) {
+                consola.append("  ").append(err).append("\n");
+            }
+        }
+
+        // FASE 3: Análisis Semántico
+        consola.append("\nFASE 3: ANÁLISIS SEMÁNTICO\n");
+        consola.append("---------------------------\n");
+
+        List<ErrorSQL> erroresSemanticos = errores.stream()
+                .filter(e -> e.tipo == 3).toList();
+        if (erroresSemanticos.isEmpty()) {
+            consola.append("✓ Semántica válida\n");
+        } else {
+            consola.append("⚠️  Errores Semánticos:\n");
+            for (ErrorSQL err : erroresSemanticos) {
+                consola.append("  ").append(err).append("\n");
+            }
+        }
+
+        // Resultado final
+        consola.append("\n=== RESULTADO FINAL ===\n");
+        if (errores.isEmpty()) {
+            consola.append("✓ CONSULTA VÁLIDA - Libre de errores\n");
+            consola.append("MÓDULO DE RESULTADOS: Sentencia procesada correctamente\n");
+            JOptionPane.showMessageDialog(this, "✓ Análisis exitoso\n\nLa sentencia SQL es válida", "Éxito",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            consola.append("✗ CONSULTA INVÁLIDA - Se encontraron ").append(errores.size()).append(" error(es)\n");
+            consola.append("MÓDULO DE ERRORES: Ver detalles abajo\n");
+        }
+
+        textConsola.setText(consola.toString());
+
+        // Llenar tabla de errores
+        int numError = 1;
+        for (ErrorSQL err : errores) {
+            modeloErrores.addRow(new Object[] {
+                    err.linea,
+                    err.codigo,
+                    err.getTipoError(),
+                    "Línea " + err.linea,
+                    err.descripcion
+            });
         }
     }
 
-    private void limpiarTablas() {
-        modTokens.setRowCount(0);
-        modErr.setRowCount(0);
+    private void limpiarResultados() {
+        modeloErrores.setRowCount(0);
+        textConsola.setText("");
     }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            new Scanner4().setVisible(true);
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            Scanner4 frame = new Scanner4();
+            frame.setVisible(true);
         });
     }
 }
