@@ -1,0 +1,21 @@
+SELECT C.M#, MNOMBRE
+FROM MATERIAS, (SELECT M#
+                FROM INSCRITOS
+                WHERE A# IN (SELECT A#
+                             FROM ALUMNOS
+                             WHERE ANOMBRE='MESSI LIONEL')) E
+WHERE MATERIAS.M#=C.M#
+
+---------------------------------------------------------------
+
+SELECT A.ANOMBRE, I.A#, D.CNOMBRE
+FROM ALUMNOS A, INSCRITOS I, CARRERAS C
+WHERE A.A#=I.A# AND A.C#=C.C# AND I.SEMESTRE='2010I'
+  AND C.CNOMBRE='ISC' AND A.GENERACION='2010'
+
+---------------------------------------------------------------
+
+SELECT A.ANOMBRE, I.A#, C.CNOMBRE
+FROM ALUMNOS A, INSCRITOS I, CARRERAS C
+WHERE A.A#=I.A# AND A.C#= C.C# AND I.SEMESTRE='2010I'
+  AND C.CNOMBRE='ISC' AND R.GENERACION='2010'

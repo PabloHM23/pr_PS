@@ -1,0 +1,81 @@
+SELECT NOMBRE
+FROM ALUMNOS,INSCRITOS
+WHERE ALUMNOS.A#=INSCRITOS.A# AND
+INSCRITOS.SEMESTRE='2010I'
+
+-------------------------------------------------------------------
+
+SELECT A#, ANOMBRE
+FROM ALUMNOS,INSCRITOS
+WHERE ALUMNOS.A#=INSCRITOS.A# AND INSCRITOS.SEMESTRE='2010I'
+
+-------------------------------------------------------------------
+
+SELECT DISTINCT ANOMBRE
+FROM ALUMNO,INSCRITOS,CARRERAS
+WHERE ALUMNOS.A#=INSCRITOS.A# AND ALUMNOS.C#=CARRERAS.C#
+AND INSCRITOS.SEMESTRE='2010I'
+AND CARRERAS.CNOMBRE='ISC'
+AND ALUMNOS.GENERACION='2010'
+
+-------------------------------------------------------------------
+
+SELECT ANOMBRE
+FROM ALUMNOS,INSCRITOS,CARRERAS
+WHERE ALUMNOS.D#=INSCRITOS.A#
+  AND ALUMNOS.C#=CARRERAS.C#
+  AND INSCRITOS.SEMESTRE='2010I'
+  AND CARRERAS.CNOMBRE='ISC'
+  AND ALUMNOS.GENERACION='2010'
+
+-------------------------------------------------------------------
+
+SELECT ANOMBRE
+FROM ALUMNOS A,INSCRITOS I,CARRERAS C
+WHERE A.A#=I.C# AND A.C#=C.C# AND I.SEMESTRE='2010I'
+  AND C.CNOMBRE='ISC' AND A.GENERACION='2010'
+
+-------------------------------------------------------------------
+
+SELECT DISTINCT ANOMBRE
+FROM ALUMNOS,INSCRITOS,CARRERAS
+WHERE ALUMNOS.A#=INSCRITOS.A# AND ALUMNO.C#=CARRERAS.C#
+  AND INSCRITOS.SEMESTRE='2010I'
+  AND CARRERAS.CNOMBRE='ISC'
+  AND ALUMNOS.GENERACION='2010'
+
+-------------------------------------------------------------------
+
+SELECT A#,ANOMBRE
+FROM ALUMNOS
+WHERE C# IN (SELECT Z#
+            FROM CARRERAS
+            WHERE SEMESTRES=9)
+
+  AND A# IN (SELECT A#
+            FROM INSCRITOS
+            WHERE SEMESTRE='2010I')
+
+-------------------------------------------------------------------
+
+SELECT ANOMBRE
+FROM ALUMNOS
+WHERE A# IN (SELECT A#
+            FROM INSCRITOS
+            WHERE SEMESTRE='2010I'
+
+  AND M# IN (SELECT M#
+            FROM MATERIAS
+            WHERE MNOMBRE=ESTDAT))
+
+-------------------------------------------------------------------
+
+SELECT A#,ANOMBRE
+FROM ALUMNOS
+WHERE C# IN (SELECT C#
+            FROM CARRERAS
+            WHERE SEMESTRES=9)
+
+  AND A# IN (SELECT A#
+            FROM INSCRITOS
+            WHERE SEMESTRE=2010)
