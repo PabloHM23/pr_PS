@@ -9,7 +9,7 @@ import java.util.List;
 
 public class Scanner4 extends JFrame {
 
-    // ── ESTRUCTURAS DE DATOS GLOBALES ─────────────────────────────────────────
+    //  ESTRUCTURAS DE DATOS  
 
     private static final Map<String, Integer> PALABRAS_RESERVADAS = new HashMap<>();
     private static final Map<Character, Integer> DELIMITADORES = new HashMap<>();
